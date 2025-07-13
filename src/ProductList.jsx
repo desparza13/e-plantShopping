@@ -1,9 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import './ProductList.css'
 import CartItem from './CartItem';
+import { addItem } from "./CartSlice";
+import { useSelector, useDispatch } from "react-redux";
+
 function ProductList({ onHomeClick }) {
     const [showCart, setShowCart] = useState(false);
     const [showPlants, setShowPlants] = useState(false); // State to control the visibility of the About Us page
+    const [addedToCart, setAddedToCart] = useState({});
+    const dispatch = useDispatch();
 
     const plantsArray = [
         {
@@ -237,7 +242,13 @@ function ProductList({ onHomeClick }) {
         e.preventDefault();
         onHomeClick();
     };
-
+    const handleAddToCart = (product) => {
+        dispatch(addItem(product));
+        setAddedToCart((prevState) => ({ // Update the local state to reflect that the product has been added
+            ...prevState, // Spread the previous state to retain existing entries
+            [product.name]: true, // Set the current product's name as a key with value 'true' to mark it as added
+        }));
+    };
     const handleCartClick = (e) => {
         e.preventDefault();
         setShowCart(true); // Set showCart to true when cart icon is clicked
@@ -251,6 +262,11 @@ function ProductList({ onHomeClick }) {
     const handleContinueShopping = (e) => {
         e.preventDefault();
         setShowCart(false);
+    };
+
+    const CartItems = useSelector(state => state.cart.items);
+    const calculateTotalQuantity = () => {
+        return CartItems ? CartItems.reduce((total, item) => total + item.quantity, 0) : 0;
     };
     return (
         <div>
@@ -274,7 +290,40 @@ function ProductList({ onHomeClick }) {
             </div>
             {!showCart ? (
                 <div className="product-grid">
+                    {plantsArray.map((category, index) => ( // Loop through each category in plantsArray
+                    <div key={index}> {/* Unique key for each category div */}
+                        <h1>
+                        <div>{category.category}</div> {/* Display the category name */}
+                        </h1>
+                        <div className="product-list"> {/* Container for the list of plant cards */}
+                        {category.plants.map((plant, plantIndex) => {
+                            const isAdded = addedToCart[plant.name] || false; 
+                            return (
+                                <div className="product-card" key={plantIndex}>
+                                <img 
+                                    className="product-image" 
+                                    src={plant.image}
+                                    alt={plant.name}
+                                />
+                                <div className="product-title">{plant.name}</div>
+                                <div className="product-description">{plant.description}</div>
+                                <div className="product-cost">{plant.cost}</div>
 
+                                <button
+                                    className="product-button"
+                                    onClick={() => handleAddToCart(plant)}
+                                    disabled={isAdded}  // disable if added
+                                    style={{ backgroundColor: isAdded ? 'gray' : '#4CAF50', cursor: isAdded ? 'not-allowed' : 'pointer' }} // optional styling
+                                >
+                                    {isAdded ? "Added to Cart" : "Add to Cart"}  {/* change text if added */}
+                                </button>
+                                </div>
+                            );
+                            })}
+
+                        </div>
+                    </div>
+                    ))}
 
                 </div>
             ) : (
